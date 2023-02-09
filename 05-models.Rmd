@@ -1,0 +1,220 @@
+---
+title: "Models"
+output: html_notebook
+---
+# Importando as bibliotecas
+```{r}
+library(tidyverse)
+library(lfe)
+library(stargazer)
+library(plm)
+```
+
+# Leitura do dataset e tratamento
+```{r}
+df_cross_border <- as_tibble(read.csv(file = "./datasets/df-bis-claims-cross-border.csv"))
+
+df_cross_border$year_quarter <- tsibble::yearquarter(df_cross_border$year_quarter)
+
+df_cross_border <-
+  df_cross_border %>%
+  mutate(year = lubridate::year(year_quarter))
+
+df_cross_border <-
+  df_cross_border %>%
+  rename(
+    mapC = map_cumulative,
+    mapC_credit = map_credit_cumulative,
+    mapC_capital = map_capital_cumulative,
+    mapC_liquidity = map_liquidity_cumulative,
+    Wmap = weighted_map,
+    Wmap_credit = weighted_credit_map,
+    Wmap_capital = weighted_capital_map,
+    Wmap_liquidity = weighted_liquidity_map,
+    WmapC = weighted_cumulative_map,
+    WmapC_credit = weighted_cumulative_credit_map,
+    WmapC_capital = weighted_cumulative_capital_map,
+    WmapC_liquidity = weighted_cumulative_liquidity_map
+  )
+```
+
+# Separação dos datasets em EA e EMDE
+```{r}
+df_cross_border_ae <-
+  df_cross_border %>%
+  filter(AE == 1)
+
+df_cross_border_emde <-
+  df_cross_border %>%
+  filter(AE == 0)
+```
+
+# Modelos 1 a 4  (Efeito MAP sobre AFI)
+```{r}
+model_1 <- felm(
+  data = df_cross_border,
+  formula = log(international_claims) ~ map + log(gdp_dollar2015) + credit_gdp_gap + log(exchange_rate) + regulatory_quality_estimate | country + factor(year)
+  )
+
+model_2 <- felm(
+  data = df_cross_border,
+  formula = log(international_claims) ~ mapC +  log(gdp_dollar2015) + credit_gdp_gap + log(exchange_rate) + regulatory_quality_estimate   | country + factor(year)
+  )
+
+model_3 <- felm(
+  data = df_cross_border,
+  formula = log(international_claims) ~ Wmap + log(gdp_dollar2015) + credit_gdp_gap + log(exchange_rate) + regulatory_quality_estimate | country + factor(year)
+  )
+
+model_4 <- felm(
+  data = df_cross_border,
+  formula = log(international_claims) ~ WmapC +  log(gdp_dollar2015) + credit_gdp_gap + log(exchange_rate) + regulatory_quality_estimate   | country + factor(year)
+  )
+
+
+stargazer(model_1, model_2, model_3, model_4, type = "text", align = TRUE, dep.var.labels = c("log International Claims", "log International Claims"))
+
+```
+
+# Modelos 5 a 8  (Efeito MAP por tipo sobre AFI)
+```{r}
+model_5 <- felm(
+  data = df_cross_border,
+  formula = log(international_claims) ~ map_credit + map_capital + map_liquidity + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year)
+  )
+
+model_6 <- felm(
+  data = df_cross_border,
+  formula = log(international_claims) ~ mapC_credit + mapC_capital + mapC_liquidity + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year)
+  )
+
+model_7 <- felm(
+  data = df_cross_border,
+  formula = log(international_claims) ~ Wmap_credit + Wmap_capital + Wmap_liquidity + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year)
+  )
+
+model_8 <- felm(
+  data = df_cross_border,
+  formula = log(international_claims) ~ WmapC_credit + WmapC_capital + WmapC_liquidity + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year)
+  )
+
+
+stargazer(model_5, model_6, model_7, model_8,  type = "text")
+```
+
+# Modelos 9 a 16 (Efeito MAP sobre AFI para EAs e EMDEs)
+```{r}
+m9 <- felm(
+  data = df_cross_border_ae,
+  formula = log(international_claims) ~ map + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year)
+  )
+
+m10 <- felm(
+  data = df_cross_border_emde,
+  formula = log(international_claims) ~ map + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year)
+  )
+
+m11 <- felm(
+  data = df_cross_border_ae,
+  formula = log(international_claims) ~ mapC + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | factor(country) + factor(year)
+  )
+
+m12 <- felm(
+  data = df_cross_border_emde,
+  formula = log(international_claims) ~ mapC +  log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year)
+  )
+
+m13 <- felm(
+  data = df_cross_border_ae,
+  formula = log(international_claims) ~ map_credit + map_capital + map_liquidity + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year)
+  )
+
+m14 <- felm(
+  data = df_cross_border_emde,
+  formula = log(international_claims) ~ map_credit + map_capital + map_liquidity + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year)
+  )
+
+m15 <- felm(
+  data = df_cross_border_ae,
+  formula = log(international_claims) ~ mapC_credit + mapC_capital + mapC_liquidity + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year)
+  )
+
+m16 <- felm(
+  data = df_cross_border_emde,
+  formula = log(international_claims) ~ mapC_credit + mapC_capital + mapC_liquidity + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year)
+  )
+
+stargazer::stargazer(m9, m10, m11, m12, m13, m14, m15, m16,  type = "text")
+```
+
+# Modelos 17 a 20  (Efeito MAP de crédito sobre EDI)
+```{r}
+model_17 <- felm(
+  data = df_cross_border,
+  formula = log(international_loans_deposits) ~ map_credit + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year)
+  )
+
+model_18 <- felm(
+  data = df_cross_border,
+  formula = log(international_loans_deposits) ~ mapC_credit + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year)
+  )
+
+model_19 <- felm(
+  data = df_cross_border,
+  formula = log(international_loans_deposits) ~ Wmap_credit + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year)
+  )
+
+model_20 <- felm(
+  data = df_cross_border,
+  formula = log(international_loans_deposits) ~  WmapC_credit + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year)
+  )
+
+stargazer(model_17, model_18, model_19, model_20, type = "text")
+```
+
+# Modelos 21 a 24 (Efeito MAP de crédito sobre EDI para EAs e EMDEs)
+```{r}
+model_21 <- felm(
+  data = df_cross_border_ae,
+  formula = log(international_loans_deposits) ~ map_credit + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year_quarter)
+  )
+
+model_22 <- felm(
+  data = df_cross_border_emde,
+  formula = log(international_loans_deposits) ~ map_credit + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year_quarter)
+  )
+
+model_23 <- felm(
+  data = df_cross_border_ae,
+  formula = log(international_loans_deposits) ~ mapC_credit + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year_quarter)
+  )
+
+model_24 <- felm(
+  data = df_cross_border_emde,
+  formula = log(international_loans_deposits) ~ mapC_credit + log(gdp_dollar2015) + credit_gdp_gap + 
+    log(exchange_rate) + regulatory_quality_estimate | country + factor(year_quarter)
+  )
+
+stargazer(model_21, model_22, model_23, model_24, type = "text")
+```
+
+
